@@ -100,7 +100,11 @@ fn criterion_benchmark(c: &mut Criterion) {
             do_hash_test(b, std::slice::from_ref(&array));
         });
         c.bench_function(&format!("{name}: multiple, no nulls"), |b| {
-            let arrays = vec![array.clone(), array.clone(), array.clone()];
+            let arrays = vec![
+                Arc::clone(&array),
+                Arc::clone(&array),
+                Arc::clone(&array),
+            ];
             do_hash_test(b, &arrays);
         });
 
@@ -112,9 +116,9 @@ fn criterion_benchmark(c: &mut Criterion) {
             });
             c.bench_function(&format!("{name}: multiple, nulls"), |b| {
                 let arrays = vec![
-                    nullable_array.clone(),
-                    nullable_array.clone(),
-                    nullable_array.clone(),
+                    Arc::clone(&nullable_array),
+                    Arc::clone(&nullable_array),
+                    Arc::clone(&nullable_array),
                 ];
                 do_hash_test(b, &arrays);
             });
@@ -165,12 +169,11 @@ fn add_nulls(array: &ArrayRef) -> ArrayRef {
 
             let run_ends_buffer = run_array.run_ends().inner().clone();
             let run_ends_array = PrimitiveArray::<Int32Type>::new(run_ends_buffer, None);
-            let values = run_array.values().clone();
+            let values = Arc::clone(run_array.values());
 
             // Add nulls to the values array
             let values_with_nulls = {
-                let array_data = values
-                    .clone()
+                let array_data = Arc::clone(&values)
                     .into_data()
                     .into_builder()
                     .nulls(Some(create_null_mask(values.len())))
@@ -185,8 +188,7 @@ fn add_nulls(array: &ArrayRef) -> ArrayRef {
             )
         }
         _ => {
-            let array_data = array
-                .clone()
+            let array_data = Arc::clone(array)
                 .into_data()
                 .into_builder()
                 .nulls(Some(create_null_mask(array.len())))
